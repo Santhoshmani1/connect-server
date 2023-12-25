@@ -18,7 +18,7 @@ mongoose
   .catch((err) => console.log("connection to db failed", err));
 
 app.get("/", (req, res) => {
-  res.send("hello connect")
+  res.status(200).send("hello connect");
 });
 
 app.post("/signup", (req, res) => {
