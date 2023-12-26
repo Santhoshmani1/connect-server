@@ -12,6 +12,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+const PORT = process.env.PORT || 3000;
+
 mongoose
   .connect(process.env.mongo_connection_id)
   .then(() => console.log("connected to db successfully"))
@@ -172,7 +174,6 @@ app.post("/userUpdate", (req, res) => {
     });
 });
 
-
 app.post("/newTeam", (req, res) => {
   const { team, userId } = req.body;
   const {
@@ -298,6 +299,6 @@ app.get("/member/:id", (req, res) => {
     });
 });
 
-app.listen(5000 || process.env.PORT, () => {
+app.listen( PORT, "0.0.0.0", () => {
   console.log("Server started on port 5000");
 });
