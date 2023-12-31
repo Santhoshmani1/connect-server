@@ -2,17 +2,20 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import { userSchema } from "./schemas/user.js";
-import { hackathonSchema } from "./schemas/hackathon.js";
+import bcrypt from "bcrypt";
+
+import userSchema from "./schemas/user.js";
+import hackathonSchema from "./schemas/hackathon.js";
 import teamSchema from "./schemas/team.js";
 
 dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+const saltRounds = 10;
+
 app.use(express.json());
 app.use(cors());
-
-const PORT = process.env.PORT || 3000;
 
 mongoose
   .connect(process.env.mongo_connection_id)
@@ -25,29 +28,38 @@ app.get("/", (req, res) => {
 
 app.post("/signup", (req, res) => {
   console.log("signup request");
-  let newUserStatus = true;
   const { name, email, password } = req.body;
-  const User = mongoose.model("User", userSchema);
-  const newUser = new User({
-    name,
-    email,
-    password,
-    skills: [],
-    projects: [],
-    posts: [],
-    createdAt: new Date(),
-  });
-  newUser
-    .save()
-    .then((data) => {
-      console.log("user created successfully");
-      const userId = String(data._id);
-      res.status(200).send({ message: "success", userId: userId });
-    })
-    .catch((err) => {
-      console.log("user creation failed", err);
-      res.status(400).send({ message: "user creation failed" });
+
+  bcrypt.hash(password, saltRounds, function (err, hash) {
+    console.log(password,saltRounds);
+    if (err) {
+      console.log("Error hashing password", err);
+      return res.status(500).send({ message: "Error hashing password" });
+    }
+
+    const User = mongoose.model("User", userSchema);
+    const newUser = new User({
+      name,
+      email,
+      password: hash,
+      skills: [],
+      projects: [],
+      posts: [],
+      createdAt: new Date(),
     });
+
+    newUser
+      .save()
+      .then((data) => {
+        console.log("user created successfully");
+        const userId = String(data._id);
+        res.status(200).send({ message: "success", userId: userId });
+      })
+      .catch((err) => {
+        console.log("user creation failed", err);
+        res.status(400).send({ message: "user creation failed" });
+      });
+  });
 });
 
 app.post("/login", async (req, res) => {
@@ -56,13 +68,22 @@ app.post("/login", async (req, res) => {
   console.log(req.body);
   const User = mongoose.model("User", userSchema);
   try {
-    const userStatus = await User.find({ email });
-    console.log(userStatus);
-    if (userStatus[0].password == password) {
-      res.status(200).send({ message: "success", userStatus });
-      console.log("user found", userStatus);
+    const userStatus = await User.findOne({ email });
+    if (userStatus) {
+      bcrypt.compare(password, userStatus.password, function (err, result) {
+        if (err) {
+          console.log("Error comparing passwords", err);
+          return res.status(500).send({ message: "Error comparing passwords" });
+        }
+        if (result) {
+          res.status(200).send({ message: "success", userStatus });
+          console.log("user found", userStatus);
+        } else {
+          res.status(400).send({ message: "incorrect-password" });
+        }
+      });
     } else {
-      res.status(400).send({ message: "incorrect-password" });
+      res.status(400).send({ message: "User not found" });
     }
   } catch (err) {
     console.log("login failed", err);
@@ -299,6 +320,6 @@ app.get("/member/:id", (req, res) => {
     });
 });
 
-app.listen( PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log("Server started on port 5000");
 });

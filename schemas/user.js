@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { projectSchema } from "./projects.js";
 import { postsSchema } from "./posts.js";
 
-export const userSchema = mongoose.Schema({
+const userSchema = mongoose.Schema({
   name: String,
   email: {
     type: "String",
@@ -40,3 +40,5 @@ export const userSchema = mongoose.Schema({
     default: new Date(),
   },
 });
+
+export default userSchema;

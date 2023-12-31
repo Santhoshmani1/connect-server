@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const hackathonSchema = mongoose.Schema({
+const hackathonSchema = mongoose.Schema({
     name:String,
     cover_photo:String,
     Organisation : String,
@@ -11,3 +11,5 @@ export const hackathonSchema = mongoose.Schema({
     description:String,
     officialUrl:String,
 })
+
+export default hackathonSchema;
