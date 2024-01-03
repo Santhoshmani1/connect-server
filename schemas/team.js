@@ -6,14 +6,12 @@ const interestedUserSchema = new mongoose.Schema({
   userName: String,
 });
 
-
-
 const teamSchema = mongoose.Schema({
   name: {
     type: String,
     required: true,
   },
-  authorId : String,
+  authorId: String,
   authorName: String,
   teamSize: Number,
   teamVacancies: Number,
