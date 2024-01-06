@@ -1,6 +1,7 @@
 import { Router } from "express";
 import mongoose from "mongoose";
 import teamSchema from "../schemas/team.js";
+import { verifyAccessToken } from "../middleware/auth.js";
 
 const teamsRouter = Router();
 
@@ -17,11 +18,13 @@ teamsRouter.get("/", (req, res) => {
     });
 });
 
-teamsRouter.get("/myteams/:authorId", (req, res) => {
-  const { authorId } = req.params;
+teamsRouter.get("/myteams", verifyAccessToken, (req, res) => {
+  const { userId } = req.params;
+  console.log(userId);
   const Team = mongoose.model("Team", teamSchema);
-  Team.find({ authorId: authorId })
+  Team.find({ authorId: userId })
     .then((teams) => {
+      console.log(teams);
       res.status(200).send(teams);
     })
     .catch((err) => {
@@ -30,8 +33,9 @@ teamsRouter.get("/myteams/:authorId", (req, res) => {
     });
 });
 
-teamsRouter.post("/", (req, res) => {
-  const { team, userId } = req.body;
+teamsRouter.post("/", verifyAccessToken,(req, res) => {
+  const { userId } = req.params;
+  const { team } = req.body;
   const {
     name,
     hackathonName,
@@ -72,7 +76,7 @@ teamsRouter.post("/", (req, res) => {
     });
 });
 
-teamsRouter.put("/", (req, res) => {
+teamsRouter.put("/", verifyAccessToken, (req, res) => {
   console.log("teams request");
   console.log(req.body);
   const { teamId, userId, email, userName } = req.body;

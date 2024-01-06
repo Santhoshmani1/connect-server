@@ -2,14 +2,15 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import userSchema from "../schemas/user.js";
+import { createAccessToken, verifyAccessToken } from "../middleware/auth.js";
 
 const userRouter = Router();
 
 userRouter.post("/signup", (req, res) => {
   const saltRounds = 10;
   console.log("signup request");
+  console.log(req.body);
   const { name, email, password } = req.body;
-
   bcrypt.hash(password, saltRounds, function (err, hash) {
     console.log(password, saltRounds);
     if (err) {
@@ -33,7 +34,17 @@ userRouter.post("/signup", (req, res) => {
       .then((data) => {
         console.log("user created successfully");
         const userId = String(data._id);
-        res.status(200).send({ message: "success", userId: userId });
+        const accessToken = createAccessToken(userId);
+        res.cookie("accessToken", accessToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+        });
+        res.status(200).send({
+          message: "success",
+          userId: userId,
+          accessToken,
+        });
       })
       .catch((err) => {
         console.log("user creation failed", err);
@@ -56,10 +67,13 @@ userRouter.post("/login", async (req, res) => {
           return res.status(500).send({ message: "Error comparing passwords" });
         }
         if (result) {
-          res.status(200).send({ message: "success", userStatus });
+          const accessToken = createAccessToken(userStatus._id);
+          res.status(200).send({
+            message: "success",
+            userStatus,
+            accessToken,
+          });
           console.log("user found", userStatus);
-        } else {
-          res.status(400).send({ message: "incorrect-password" });
         }
       });
     } else {
@@ -71,9 +85,8 @@ userRouter.post("/login", async (req, res) => {
   }
 });
 
-userRouter.get("/:id", (req, res) => {
-  const userId = req.params.id;
-  console.log(userId);
+userRouter.get("/profile", verifyAccessToken, (req, res) => {
+  const { userId } = req.params;
   console.log(userId);
   const User = mongoose.model("User", userSchema);
   User.findOne({ _id: userId })
@@ -113,9 +126,10 @@ userRouter.get("/:id", (req, res) => {
     });
 });
 
-userRouter.put("/", (req, res) => {
+userRouter.put("/", verifyAccessToken, (req, res) => {
   console.log("user update request");
-  const { userId, updatedUserDetails } = req.body;
+  const {userId} = req.params;
+  const { updatedUserDetails } = req.body;
   const { name, email, github, twitter, linkedin, about, profilePic, skills } =
     updatedUserDetails;
   const User = mongoose.model("User", userSchema);
